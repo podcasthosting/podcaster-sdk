@@ -1,7 +1,7 @@
 {
-    "name": "laravel/lumen",
-    "description": "The Laravel Lumen Framework.",
-    "keywords": ["framework", "laravel", "lumen"],
+    "name": "podcasthosting/podcaster-sdk",
+    "description": "Toolset to easily connect a client to the podcaster API.",
+    "keywords": ["api", "podcaster", "hosting"],
     "license": "MIT",
     "type": "project",
     "require": {
