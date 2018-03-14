@@ -15,6 +15,8 @@ class PodcasterClient
 
     private $provider;
 
+    private $accessToken;
+
     /**
      * PodcasterClient constructor.
      */
@@ -57,38 +59,36 @@ class PodcasterClient
                 unset($_SESSION['oauth2state']);
             }
 
-            exit('Invalid state');
+            throw new \Exception('Invalid state');
 
         } else {
 
             try {
 
                 // Try to get an access token using the authorization code grant.
-                $accessToken = $provider->getAccessToken('authorization_code', [
-                    'code' => $_GET['code']
-                ]);
+                $accessToken = $provider->getAccessToken('authorization_code', ['code' => $_GET['code']]);
 
                 // We have an access token, which we may use in authenticated
                 // requests against the service provider's API.
-                echo 'Access Token: ' . $accessToken->getToken() . "<br>";
+/*                echo 'Access Token: ' . $accessToken->getToken() . "<br>";
                 echo 'Refresh Token: ' . $accessToken->getRefreshToken() . "<br>";
                 echo 'Expired in: ' . $accessToken->getExpires() . "<br>";
-                echo 'Already expired? ' . ($accessToken->hasExpired() ? 'expired' : 'not expired') . "<br>";
+                echo 'Already expired? ' . ($accessToken->hasExpired() ? 'expired' : 'not expired') . "<br>";*/
+                $this->setAccessToken($accessToken);
 
                 // Using the access token, we may look up details about the
                 // resource owner.
-                $resourceOwner = $provider->getResourceOwner($accessToken);
-
-                var_export($resourceOwner->toArray());
+/*                $resourceOwner = $provider->getResourceOwner($accessToken);
+                var_export($resourceOwner->toArray());*/
 
                 // The provider provides a way to get an authenticated API request for
                 // the service, using the access token; it returns an object conforming
                 // to Psr\Http\Message\RequestInterface.
-                $request = $provider->getAuthenticatedRequest(
+/*                $request = $provider->getAuthenticatedRequest(
                     'GET',
-                    'http://brentertainment.com/oauth2/lockdin/resource',
+                    'https://api.podcaster.de/oauth2/lockdin/resource',
                     $accessToken
-                );
+                );*/
 
             } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
 
@@ -98,5 +98,21 @@ class PodcasterClient
             }
 
         }
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getAccessToken()
+    {
+        return $this->accessToken;
+    }
+
+    /**
+     * @param mixed $accessToken
+     */
+    public function setAccessToken($accessToken): void
+    {
+        $this->accessToken = $accessToken;
     }
 }
