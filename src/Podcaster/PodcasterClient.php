@@ -93,7 +93,7 @@ class PodcasterClient
             } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
 
                 // Failed to get the access token or user details.
-                exit($e->getMessage());
+                exit($e->getResponseBody()['hint']);
 
             }
 
