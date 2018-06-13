@@ -2,117 +2,136 @@
 /**
  * User: fabio
  * Date: 08.03.18
- * Time: 18:35
+ * Time: 18:27
  */
-
 namespace Podcaster;
+
+use Buzz\Browser;
+use Nyholm\Psr7\Request;
+use Nyholm\Psr7\Uri;
+use Podcaster\Token\Token;
+use Psr\Http\Message\RequestInterface;
 
 class PodcasterClient
 {
-    const ACCESSTOKEN_URI = '/oauth/token';
-    const AUTHORIZE_URI = '/oauth/authorize';
-    const RESOURCE_URI = '/oauth/personal-access-tokens';
+    use PodcasterParseTrait;
 
-    private $provider;
+    const API_SCHEME = 'https';
+    const API_BASEURL = 'www.podcaster.de';
+    const VERSION = '1.0.1';
+    const USER_AGENT = 'PodcasterClient';
 
-    private $accessToken;
+    private $browser;
+    private $token;
 
     /**
      * PodcasterClient constructor.
      */
-    public function __construct($clientId, $clientSecret, $redirectUri, $apiUrl)
+    public function __construct($accessToken, $accessTokenExpirationDate)
     {
-        $apiUrl = rtrim($apiUrl, '/');
-        $this->provider = new \League\OAuth2\Client\Provider\GenericProvider([
-            'clientId'                => $clientId,    // The client ID assigned to you by the provider
-            'clientSecret'            => $clientSecret,   // The client password assigned to you by the provider
-            'redirectUri'             => $redirectUri,
-            'urlAuthorize'            => $apiUrl . self::AUTHORIZE_URI,
-            'urlAccessToken'          => $apiUrl . self::ACCESSTOKEN_URI,
-            'urlResourceOwnerDetails' => $apiUrl . self::RESOURCE_URI,
-        ]);
+        $this->setToken(new Token($accessToken, $accessTokenExpirationDate));
+        $this->setBrowser(new Browser(new \Buzz\Client\Curl()));
+    }
+    /**
+     * Setter injection.
+     * Set HTTP client.
+     *
+     * @param Browser $browser
+     */
+    public function setBrowser(Browser $browser)
+    {
+        $this->browser = $browser;
     }
 
-    public function connect()
+    public function getBrowser()
     {
-        $provider = $this->provider;
+        return $this->browser;
+    }
 
-        // If we don't have an authorization code then get one
-        if (!isset($_GET['code'])) {
+    /**
+     * Setter injection.
+     * Set api token for authentification.
+     *
+     * @param Token $token
+     */
+    public function setToken(Token $token)
+    {
+        $this->token = $token;
+    }
 
-            // Fetch the authorization URL from the provider; this returns the
-            // urlAuthorize option and generates and applies any necessary parameters
-            // (e.g. state).
-            $authorizationUrl = $provider->getAuthorizationUrl();
+    public function createRequest($method, $url)
+    {
+        // create new request
+        $request = new Request($method, $url);
 
-            // Get the state generated for you and store it to the session.
-            $_SESSION['oauth2state'] = $provider->getState();
-
-            // Redirect the user to the authorization URL.
-            header('Location: ' . $authorizationUrl);
-            exit;
-
-        // Check given state against previously stored one to mitigate CSRF attack
-        } elseif (empty($_GET['state']) || (isset($_SESSION['oauth2state']) && $_GET['state'] !== $_SESSION['oauth2state'])) {
-
-            if (isset($_SESSION['oauth2state'])) {
-                unset($_SESSION['oauth2state']);
-            }
-
-            throw new \Exception('Invalid state');
-
-        } else {
-
-            try {
-
-                // Try to get an access token using the authorization code grant.
-                $accessToken = $provider->getAccessToken('authorization_code', ['code' => $_GET['code']]);
-
-                // We have an access token, which we may use in authenticated
-                // requests against the service provider's API.
-/*                echo 'Access Token: ' . $accessToken->getToken() . "<br>";
-                echo 'Refresh Token: ' . $accessToken->getRefreshToken() . "<br>";
-                echo 'Expired in: ' . $accessToken->getExpires() . "<br>";
-                echo 'Already expired? ' . ($accessToken->hasExpired() ? 'expired' : 'not expired') . "<br>";*/
-                $this->setAccessToken($accessToken);
-
-                // Using the access token, we may look up details about the
-                // resource owner.
-/*                $resourceOwner = $provider->getResourceOwner($accessToken);
-                var_export($resourceOwner->toArray());*/
-
-                // The provider provides a way to get an authenticated API request for
-                // the service, using the access token; it returns an object conforming
-                // to Psr\Http\Message\RequestInterface.
-/*                $request = $provider->getAuthenticatedRequest(
-                    'GET',
-                    'https://api.podcaster.de/oauth2/lockdin/resource',
-                    $accessToken
-                );*/
-
-            } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
-
-                // Failed to get the access token or user details.
-                exit($e->getResponseBody()['hint']);
-
-            }
-
+        // add token if given
+        if ($this->token) {
+            /**
+             * generate header for OAuth2 bearer token
+             * http://self-issued.info/docs/draft-ietf-oauth-v2-bearer.html
+             */
+            $request = $request->withHeader('Authorization', sprintf("Bearer %s", $this->token->getToken()));
         }
+        // set content type header
+        $request = $request->withHeader("Content-Type", "application/json");
+        // set user agent
+        $request = $request->withHeader("User-Agent", self::USER_AGENT . '/' . self::VERSION);
+
+        return $request;
+    }
+
+    public function process(RequestInterface $request)
+    {
+        $response = $this->browser->sendRequest($request);
+
+        if ($response->getStatusCode() != 200) {
+            throw new WrongStatusCodeException(sprintf("Invalid status code '%s'.", $response->getStatusCode()));
+        }
+
+        return $response->getBody();
     }
 
     /**
-     * @return mixed
+     * Creates a url object with the api base url and appends the $path
+     *
+     * @param string $path
+     * @return Uri
      */
-    public function getAccessToken()
+    public function createApiUrl($path): Uri
     {
-        return $this->accessToken;
+        $uri = new Uri();
+        $uri = $uri->withScheme(self::API_SCHEME);
+        $uri = $uri->withHost(self::API_BASEURL);
+        $uri = $uri->withPath($path);
+
+        return $uri;
     }
 
-    /**
-     * @param mixed $accessToken
-     */
-    public function setAccessToken($accessToken): void
+    public function decode($content, $type = null)
     {
-        $this->accessToken = $accessToken;
+        $result = json_decode($content);
+        $type = strtolower($type);
+
+        switch($type) {
+            case "feed":
+                $result = $result->attributes;
+        }
+
+        return $this->convert($result, $type);
+    }
+
+    public function convert($result, $type = null)
+    {
+        $type = strtolower($type);
+
+        switch($type) {
+            case "feed":
+                $oFeed = new Resource\Feed();
+                self::cast($oFeed, $result);
+
+                return $oFeed;
+            default:
+                return $result;
+        }
     }
 }
