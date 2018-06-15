@@ -12,13 +12,16 @@ class Feed extends Client
 {
     const APIURL_FEED = '/api/feeds/';
 
-    public function get($id)
+    public function get($id, $convert = true)
     {
         $url = $this->client->createApiUrl(self::APIURL_FEED . $id);
         $request = $this->client->createRequest('GET', $url);
         $result = $this->client->process($request);
-        $oData = $this->client->decode($result, 'feed');
 
-        return $oData;
+        if ($convert === true) {
+            return $this->client->decode($result, 'feed');
+        }
+
+        return $result;
     }
 }

@@ -12,26 +12,31 @@ class Feeds extends Client
 {
     const APIURL_FEEDS = '/api/feeds';
 
-    public function getList()
+    public function getList($convert = true)
     {
         $url = $this->client->createApiUrl(self::APIURL_FEEDS);
         $request = $this->client->createRequest('GET', $url);
         $result = $this->client->process($request);
-        $oData = $this->client->decode($result);
 
-        $feeds = [];
+        if ($convert === true) {
+            $oData = $this->client->decode($result);
 
-        if($oData->data && is_array($oData->data)) {
-            foreach($oData->data as $feed) {
-                $feeds[] = $this->load($feed->id);
+            $feeds = [];
+
+            if($oData->data && is_array($oData->data)) {
+                foreach($oData->data as $feed) {
+                    $feeds[$feed->id] = $this->load($feed->id, $convert);
+                }
             }
+
+            return $feeds;
         }
 
-        return $feeds;
+        return (string)$result;
     }
 
-    private function load($id)
+    private function load($id, $convert)
     {
-        return (new Feed($this->getClient()))->get($id);
+        return (new Feed($this->getClient()))->get($id, $convert);
     }
 }

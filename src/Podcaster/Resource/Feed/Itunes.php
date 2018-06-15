@@ -5,7 +5,7 @@
  * Time: 17:29
  */
 
-namespace Podcaster\Resource;
+namespace Podcaster\Resource\Feed;
 
 use Podcaster\PodcasterParseTrait;
 

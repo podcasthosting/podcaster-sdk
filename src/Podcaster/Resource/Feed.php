@@ -20,11 +20,13 @@ class Feed implements \JsonSerializable
     protected $language;
     protected $category;
     protected $itunes;
+    protected $google;
 
     use PodcasterParseTrait;
 
     public function __construct()
     {
-        $this->itunes = new Itunes();
+        $this->itunes = new Feed\Itunes();
+        $this->google = new Feed\Google();
     }
 }
