@@ -18,7 +18,7 @@ class PodcasterClient
 
     const API_SCHEME = 'https';
     const API_BASEURL = 'www.podcaster.de';
-    const VERSION = '1.0.1';
+    const VERSION = '1.0.2';
     const USER_AGENT = 'PodcasterClient';
 
     private $browser;
@@ -61,21 +61,20 @@ class PodcasterClient
 
     public function createRequest($method, $url)
     {
-        // create new request
-        $request = new Request($method, $url);
-
-        // add token if given
-        if ($this->token) {
-            /**
-             * generate header for OAuth2 bearer token
-             * http://self-issued.info/docs/draft-ietf-oauth-v2-bearer.html
-             */
-            $request = $request->withHeader('Authorization', sprintf("Bearer %s", $this->token->getToken()));
+        if (!$this->token) {
+            throw new \Exception("Token is required");
         }
-        // set content type header
-        $request = $request->withHeader("Content-Type", "application/json");
-        // set user agent
-        $request = $request->withHeader("User-Agent", self::USER_AGENT . '/' . self::VERSION);
+        // create new request
+        $headers = [
+            'Authorization' => sprintf("Bearer %s", $this->token->getToken()),
+            // set content type header
+            "Content-Type" => "application/json",
+            // set user agent
+            "User-Agent" => self::USER_AGENT . '/' . self::VERSION,
+            // Send as AJAX request for more useful error codes
+            "X-Requested-With" => "XMLHttpRequest",
+        ];
+        $request = new Request($method, $url, $headers);
 
         return $request;
     }
@@ -85,7 +84,7 @@ class PodcasterClient
         $response = $this->browser->sendRequest($request);
 
         if ($response->getStatusCode() != 200) {
-            throw new WrongStatusCodeException(sprintf("Invalid status code '%s'.", $response->getStatusCode()));
+            throw new WrongStatusCodeException(sprintf("Invalid status code '%s'", $response->getStatusCode()) . ' ("' . $response->getReasonPhrase() . '").');
         }
 
         return $response->getBody();
