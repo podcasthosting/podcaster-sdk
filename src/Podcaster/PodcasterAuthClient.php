@@ -88,11 +88,7 @@ class PodcasterAuthClient
      */
     public function refresh($existingAccessToken)
     {
-        if (!$existingAccessToken) {
-            throw new InvalidStateException('Existing access token is missing');
-        }
-
-        if ($existingAccessToken->hasExpired()) {
+        if ($existingAccessToken && $existingAccessToken->hasExpired()) {
             $newAccessToken = $this->provider->getAccessToken('refresh_token', [
                 'refresh_token' => $existingAccessToken->getRefreshToken()
             ]);
