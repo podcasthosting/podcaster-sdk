@@ -81,8 +81,17 @@ class PodcasterAuthClient
         }
     }
 
+    /**
+     * @param $existingAccessToken
+     * @throws InvalidStateException
+     * @throws \League\OAuth2\Client\Provider\Exception\IdentityProviderException
+     */
     public function refresh($existingAccessToken)
     {
+        if (!$existingAccessToken) {
+            throw new InvalidStateException('Existing access token is missing');
+        }
+
         if ($existingAccessToken->hasExpired()) {
             $newAccessToken = $this->provider->getAccessToken('refresh_token', [
                 'refresh_token' => $existingAccessToken->getRefreshToken()
