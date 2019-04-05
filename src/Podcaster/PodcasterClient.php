@@ -7,10 +7,13 @@
 namespace Podcaster;
 
 use Buzz\Browser;
-use Nyholm\Psr7\Request;
-use Nyholm\Psr7\Uri;
+use Buzz\Client\Curl;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Uri;
 use Podcaster\Token\Token;
 use Psr\Http\Message\RequestInterface;
+use Tuupola\Http\Factory\RequestFactory;
+use Tuupola\Http\Factory\ResponseFactory;
 
 class PodcasterClient
 {
@@ -18,7 +21,7 @@ class PodcasterClient
 
     const API_SCHEME = 'https';
     const API_BASEURL = 'www.podcaster.de';
-    const VERSION = '1.0.2';
+    const VERSION = '1.1.0';
     const USER_AGENT = 'PodcasterClient';
 
     private $browser;
@@ -30,7 +33,7 @@ class PodcasterClient
     public function __construct($accessToken, $accessTokenExpirationDate)
     {
         $this->setToken(new Token($accessToken, $accessTokenExpirationDate));
-        $this->setBrowser(new Browser(new \Buzz\Client\Curl()));
+        $this->setBrowser(new Browser(new Curl(new ResponseFactory()), new RequestFactory()));
     }
     /**
      * Setter injection.
@@ -59,7 +62,13 @@ class PodcasterClient
         $this->token = $token;
     }
 
-    public function createRequest($method, $url)
+    /**
+     * @param $method
+     * @param $url
+     * @return Request
+     * @throws \Exception
+     */
+    public function createRequest(string $method, string $url)
     {
         if (!$this->token) {
             throw new \Exception("Token is required");
@@ -79,12 +88,17 @@ class PodcasterClient
         return $request;
     }
 
+    /**
+     * @param RequestInterface $request
+     * @return mixed
+     * @throws WrongStatusCodeException
+     */
     public function process(RequestInterface $request)
     {
         $response = $this->browser->sendRequest($request);
 
         if ($response->getStatusCode() != 200) {
-            throw new WrongStatusCodeException(sprintf("Invalid status code '%s'", $response->getStatusCode()) . ' ("' . $response->getReasonPhrase() . '").');
+            throw new WrongStatusCodeException(sprintf("Invalid status code: '%s'", $response->getStatusCode() . ' - ' .  $response->getReasonPhrase()));
         }
 
         return $response->getBody();
