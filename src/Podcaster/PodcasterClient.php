@@ -21,7 +21,7 @@ class PodcasterClient
 
     const API_SCHEME = 'https';
     const API_BASEURL = 'www.podcaster.de';
-    const VERSION = '1.1.1';
+    const VERSION = '1.1.2';
     const USER_AGENT = 'PodcasterClient';
 
     private $browser;
