@@ -8,6 +8,6 @@
 namespace Podcaster\Exceptions;
 
 
-class WrongStatusCodeException extends \Exception
+class NotAuthorizedException extends \Exception
 {
 }

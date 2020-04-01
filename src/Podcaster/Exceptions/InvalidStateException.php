@@ -10,12 +10,4 @@ namespace Podcaster\Exceptions;
 
 class InvalidStateException extends \Exception
 {
-    /**
-     * InvalidStateException constructor.
-     * @param $message
-     */
-    public function __construct($message)
-    {
-        parent::__construct($message);
-    }
 }

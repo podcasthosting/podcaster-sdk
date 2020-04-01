@@ -2,6 +2,8 @@
 
 namespace Podcaster\Token;
 
+use Podcaster\Exceptions\NoExpireException;
+
 /**
  * Class Token
  * Representation of an auphonic API token.
@@ -154,9 +156,10 @@ class Token implements \Serializable {
      * Returns false otherwise.
      * If no expire date is set an exception is thrown.
      *
-     * @throws Exception
-     *
      * @return bool
+     * @throws NoExpireException
+     *
+     * @throws Exception
      */
     public function isExpired()
     {

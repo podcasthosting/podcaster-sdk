@@ -10,6 +10,8 @@ use Buzz\Browser;
 use Buzz\Client\Curl;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Uri;
+use Podcaster\Exceptions\NotAuthorizedException;
+use Podcaster\Exceptions\WrongStatusCodeException;
 use Podcaster\Token\Token;
 use Psr\Http\Message\RequestInterface;
 use Tuupola\Http\Factory\RequestFactory;
@@ -21,7 +23,7 @@ class PodcasterClient
 
     const API_SCHEME = 'https';
     const API_BASEURL = 'www.podcaster.de';
-    const VERSION = '1.1.2';
+    const VERSION = '1.1.3';
     const USER_AGENT = 'PodcasterClient';
 
     private $browser;
@@ -92,16 +94,20 @@ class PodcasterClient
      * @param RequestInterface $request
      * @return mixed
      * @throws WrongStatusCodeException
+     * @throws NotAuthorizedException
      */
     public function process(RequestInterface $request)
     {
         $response = $this->browser->sendRequest($request);
 
-        if ($response->getStatusCode() != 200) {
-            throw new WrongStatusCodeException(sprintf("Invalid status code: '%s'", $response->getStatusCode() . ' - ' .  $response->getReasonPhrase()));
+        switch ($response->getStatusCode()) {
+            case 200:
+                return $response->getBody();
+            case 403:
+                throw new NotAuthorizedException("Authorisation failed. Check your credentials.");
+            default:
+                throw new WrongStatusCodeException(sprintf("Invalid status code: '%s'", $response->getStatusCode() . ' - ' .  $response->getReasonPhrase()));
         }
-
-        return $response->getBody();
     }
 
     /**

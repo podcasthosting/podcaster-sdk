@@ -36,7 +36,7 @@ class PodcasterAuthClient
         $this->provider = new \League\OAuth2\Client\Provider\GenericProvider([
             'clientId'                => $clientId,
             'clientSecret'            => $clientSecret,
-            'scopes'                  => array('*'),
+            'scopes'                  => ['*'],
             'redirectUri'             => $redirectUri,
             'urlAuthorize'            => $apiUrl . self::AUTHORIZE_URI,
             'urlAccessToken'          => $apiUrl . self::ACCESSTOKEN_URI,

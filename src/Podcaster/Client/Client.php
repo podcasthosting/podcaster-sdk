@@ -22,7 +22,6 @@ abstract class Client
         $this->client = $client;
     }
 
-
     /**
      * @return mixed
      */
