@@ -1,13 +1,9 @@
 <?php
-/**
- * User: fabio
- * Date: 13.06.18
- * Time: 15:37
- */
+
+declare(strict_types=1);
 
 namespace Podcaster\Exceptions;
 
-
-class NotAuthorizedException extends \Exception
+class NotAuthorizedException extends ApiException
 {
 }
